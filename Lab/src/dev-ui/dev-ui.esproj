@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.VisualStudio.JavaScript.Sdk/1.0.4338480">
+  <PropertyGroup>
+    <ProjectGuid>{86E567C4-A951-46A9-B86D-3ABADC94E687}</ProjectGuid>
+    <ShouldRunBuildScript>false</ShouldRunBuildScript>
+    <BuildOutputFolder>$(MSBuildProjectDirectory)</BuildOutputFolder>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="index.html" />
+    <Content Include="nginx.conf" />
+    <Content Include="entrypoint.sh" />
+    <Content Include="Dockerfile" />
+  </ItemGroup>
+</Project>
