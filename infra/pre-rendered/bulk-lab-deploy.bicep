@@ -35,6 +35,7 @@ param azureOpenAiDeployment string = 'gpt-4o'
 var agentResearchImage = 'acateam.azurecr.io/2026-mvp-lab/agent-research:latest'
 var agentCreatorImage = 'acateam.azurecr.io/2026-mvp-lab/agent-creator:latest'
 var agentPodcasterImage = 'acateam.azurecr.io/2026-mvp-lab/agent-podcaster:latest'
+var agentEvaluatorImage = 'acateam.azurecr.io/2026-mvp-lab/agent-evaluator:latest'
 var devUiImage = 'acateam.azurecr.io/2026-mvp-lab/dev-ui:latest'
 
 // Deterministic A2A auth token (GUID per deployment)
@@ -240,6 +241,12 @@ resource agentCreator 'Microsoft.App/containerApps@2024-03-01' = {
         targetPort: 8002
         transport: 'http'
       }
+      dapr: {
+        enabled: true
+        appId: 'agent-creator'
+        appPort: 8002
+        appProtocol: 'http'
+      }
       secrets: [
         { name: 'azure-openai-key', value: resolvedOpenAiApiKey }
         { name: 'a2a-auth-token', value: a2aToken }
@@ -314,11 +321,93 @@ resource agentPodcaster 'Microsoft.App/containerApps@2024-03-01' = {
   }
 }
 
+// Service Bus Standard for Dapr pubsub (content-created events between Creator and Evaluator)
+resource serviceBusNamespace 'Microsoft.ServiceBus/namespaces@2021-11-01' = {
+  name: '${baseName}-sb'
+  location: location
+  sku: { name: 'Standard' }
+}
+
+resource contentCreatedTopic 'Microsoft.ServiceBus/namespaces/topics@2021-11-01' = {
+  parent: serviceBusNamespace
+  name: 'content-created'
+}
+
+resource evaluatorSubscription 'Microsoft.ServiceBus/namespaces/topics/subscriptions@2021-11-01' = {
+  parent: contentCreatedTopic
+  name: 'agent-evaluator'
+}
+
+// Dapr pubsub component — Service Bus topics, scoped to creator + evaluator
+resource daprPubSub 'Microsoft.App/managedEnvironments/daprComponents@2024-03-01' = {
+  parent: acaEnv
+  name: 'pubsub'
+  properties: {
+    componentType: 'pubsub.azure.servicebus.topics'
+    version: 'v1'
+    metadata: [
+      { name: 'connectionString', secretRef: 'servicebus-connection' }
+    ]
+    secrets: [
+      { name: 'servicebus-connection', value: listKeys('${serviceBusNamespace.id}/authorizationRules/RootManageSharedAccessKey', '2021-11-01').primaryConnectionString }
+    ]
+    scopes: ['agent-creator', 'agent-evaluator']
+  }
+}
+
+// Agent 4 - Content Evaluator (.NET 10 · MAF)
+resource agentEvaluator 'Microsoft.App/containerApps@2024-03-01' = {
+  name: '${baseName}-agent-evaluator'
+  location: location
+  tags: { 'azd-service-name': 'agent-evaluator' }
+  properties: {
+    managedEnvironmentId: acaEnv.id
+    configuration: {
+      ingress: {
+        external: true
+        targetPort: 8080
+        transport: 'http'
+      }
+      dapr: {
+        enabled: true
+        appId: 'agent-evaluator'
+        appPort: 8080
+        appProtocol: 'http'
+      }
+      secrets: [
+        { name: 'azure-openai-key', value: resolvedOpenAiApiKey }
+        { name: 'a2a-auth-token', value: a2aToken }
+      ]
+    }
+    template: {
+      containers: [
+        {
+          name: 'agent-evaluator'
+          image: agentEvaluatorImage
+          resources: { cpu: json('0.5'), memory: '1Gi' }
+          env: [
+            { name: 'AZURE_AI_PROJECT_ENDPOINT', value: foundryProject.properties.endpoints.api }
+            { name: 'AZURE_OPENAI_ENDPOINT', value: resolvedOpenAiEndpoint }
+            { name: 'AZURE_OPENAI_API_KEY', secretRef: 'azure-openai-key' }
+            { name: 'AZURE_OPENAI_DEPLOYMENT', value: azureOpenAiDeployment }
+            { name: 'CONTENT_FACTORY_MODE', value: 'lab' }
+            { name: 'OTEL_SERVICE_NAME', value: 'evaluator-agent' }
+            { name: 'OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT', value: 'true' }
+            { name: 'A2A_AUTH_ENABLED', value: 'true' }
+            { name: 'A2A_AUTH_TOKEN', secretRef: 'a2a-auth-token' }
+          ]
+        }
+      ]
+      scale: { minReplicas: 1, maxReplicas: 1 }
+    }
+  }
+}
+
 // Dev UI
 resource devUi 'Microsoft.App/containerApps@2024-03-01' = {
   name: '${baseName}-dev-ui'
   location: location
-  dependsOn: [agentResearch, agentCreator, agentPodcaster]
+  dependsOn: [agentResearch, agentCreator, agentPodcaster, agentEvaluator]
   tags: { 'azd-service-name': 'dev-ui' }
   properties: {
     managedEnvironmentId: acaEnv.id
@@ -364,5 +453,7 @@ output agentResearchA2ACard string = 'https://${agentResearch.properties.configu
 output agentCreatorA2ACard string = 'https://${agentCreator.properties.configuration.ingress.fqdn}/.well-known/agent.json'
 output agentPodcasterUrl string = 'https://${agentPodcaster.properties.configuration.ingress.fqdn}'
 output agentPodcasterA2ACard string = 'https://${agentPodcaster.properties.configuration.ingress.fqdn}/.well-known/agent.json'
+output agentEvaluatorUrl string = 'https://${agentEvaluator.properties.configuration.ingress.fqdn}'
+output agentEvaluatorA2ACard string = 'https://${agentEvaluator.properties.configuration.ingress.fqdn}/.well-known/agent.json'
 output storageAccountName string = storageAccount.name
 output storageConnectionString string = 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}'

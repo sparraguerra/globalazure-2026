@@ -324,6 +324,40 @@ resource xttsModelStorage 'Microsoft.App/managedEnvironments/storages@2024-10-02
   }
 }
 
+// Service Bus Standard for Dapr pubsub (content-created events between Creator and Evaluator)
+resource serviceBusNamespace 'Microsoft.ServiceBus/namespaces@2021-11-01' = {
+  name: '${baseName}-sb'
+  location: location
+  sku: { name: 'Standard' }
+}
+
+resource contentCreatedTopic 'Microsoft.ServiceBus/namespaces/topics@2021-11-01' = {
+  parent: serviceBusNamespace
+  name: 'content-created'
+}
+
+resource evaluatorSubscription 'Microsoft.ServiceBus/namespaces/topics/subscriptions@2021-11-01' = {
+  parent: contentCreatedTopic
+  name: 'agent-evaluator'
+}
+
+// Dapr pubsub component — Service Bus topics, scoped to creator + evaluator
+resource daprPubSub 'Microsoft.App/managedEnvironments/daprComponents@2024-03-01' = {
+  parent: acaEnv
+  name: 'pubsub'
+  properties: {
+    componentType: 'pubsub.azure.servicebus.topics'
+    version: 'v1'
+    metadata: [
+      { name: 'connectionString', secretRef: 'servicebus-connection' }
+    ]
+    secrets: [
+      { name: 'servicebus-connection', value: listKeys('${serviceBusNamespace.id}/authorizationRules/RootManageSharedAccessKey', '2021-11-01').primaryConnectionString }
+    ]
+    scopes: ['agent-creator', 'agent-evaluator']
+  }
+}
+
 // Agent 1 - Research (Python/LangGraph)
 resource agentResearch 'Microsoft.App/containerApps@2024-03-01' = {
   name: '${baseName}-agent-research'
@@ -396,6 +430,12 @@ resource agentCreator 'Microsoft.App/containerApps@2024-03-01' = {
           passwordSecretRef: 'acr-password'
         }
       ]
+      dapr: {
+        enabled: true
+        appId: 'agent-creator'
+        appPort: 8002
+        appProtocol: 'http'
+      }
       secrets: [
         { name: 'acr-password', value: acr.listCredentials().passwords[0].value }
         { name: 'azure-openai-key', value: resolvedOpenAiApiKey }
@@ -438,7 +478,7 @@ resource agentEvaluator 'Microsoft.App/containerApps@2024-03-01' = {
     configuration: {
       ingress: {
         external: true
-        targetPort: 8002
+        targetPort: 8080
         transport: 'http'
       }
       registries: [
@@ -448,6 +488,12 @@ resource agentEvaluator 'Microsoft.App/containerApps@2024-03-01' = {
           passwordSecretRef: 'acr-password'
         }
       ]
+      dapr: {
+        enabled: true
+        appId: 'agent-evaluator'
+        appPort: 8080
+        appProtocol: 'http'
+      }
       secrets: [
         { name: 'acr-password', value: acr.listCredentials().passwords[0].value }
         { name: 'azure-openai-key', value: resolvedOpenAiApiKey }
@@ -620,7 +666,7 @@ resource ttsServer 'Microsoft.App/containerApps@2024-10-02-preview' = if (conten
 resource devUi 'Microsoft.App/containerApps@2024-03-01' = {
   name: '${baseName}-dev-ui'
   location: location
-  dependsOn: [agentResearch, agentCreator, agentPodcaster]
+  dependsOn: [agentResearch, agentCreator, agentPodcaster, agentEvaluator]
   tags: { 'azd-service-name': 'dev-ui' }
   properties: {
     managedEnvironmentId: acaEnv.id
@@ -676,5 +722,7 @@ output agentResearchA2ACard string = 'https://${agentResearch.properties.configu
 output agentCreatorA2ACard string = 'https://${agentCreator.properties.configuration.ingress.fqdn}/.well-known/agent.json'
 output agentPodcasterUrl string = 'https://${agentPodcaster.properties.configuration.ingress.fqdn}'
 output agentPodcasterA2ACard string = 'https://${agentPodcaster.properties.configuration.ingress.fqdn}/.well-known/agent.json'
+output agentEvaluatorUrl string = 'https://${agentEvaluator.properties.configuration.ingress.fqdn}'
+output agentEvaluatorA2ACard string = 'https://${agentEvaluator.properties.configuration.ingress.fqdn}/.well-known/agent.json'
 output storageAccountName string = storageAccount.name
 output storageConnectionString string = 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}'

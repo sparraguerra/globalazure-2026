@@ -23,6 +23,7 @@ graph TB
         A1["🔍 Research Agent<br/>Python · LangGraph"]
         A2["✍️ Content Creator<br/>.NET 10 · MAF"]
         A3["🎙️ Podcaster Agent<br/>Copilot SDK · TTS"]
+        A4["⚖️ Evaluator Agent<br/>.NET 10 · MAF"]
         OTEL["📡 Managed OTEL<br/>Collector"]
     end
 
@@ -57,14 +58,18 @@ graph TB
     A2 ==> AOAI
     A3 ==> AOAI
     A3 ==> Blob
+    A2 -- "Dapr · content-created" --> A4
+    A4 ==> AOAI
 
     A1 -. "OTLP" .-> OTEL
     A2 -. "OTLP" .-> OTEL
     A3 -. "OTLP" .-> OTEL
+    A4 -. "OTLP" .-> OTEL
     OTEL ==> AppIns
     AppIns ==> Logs
     AppIns -. "Traces" .-> FoundryAssets
     FoundryEvals -. "Eval dataset" .-> A2
+    A4 -. "Eval runs" .-> FoundryEvals
 
     %% Subgraph frames: black fill, white text
     style Presentation fill:#1a1a1a,stroke:#000,stroke-width:3px,color:#fff
@@ -78,6 +83,7 @@ graph TB
     style A1 fill:#c3e6cb,stroke:#28a745,stroke-width:2px,color:#000
     style A2 fill:#c3e6cb,stroke:#28a745,stroke-width:2px,color:#000
     style A3 fill:#c3e6cb,stroke:#28a745,stroke-width:2px,color:#000
+    style A4 fill:#c3e6cb,stroke:#28a745,stroke-width:2px,color:#000
     style AOAI fill:#fff3cd,stroke:#e6a800,stroke-width:2px,color:#000
     style FoundryAssets fill:#fadbd8,stroke:#e74c3c,stroke-width:2px,color:#000
     style FoundryEvals fill:#fadbd8,stroke:#e74c3c,stroke-width:2px,color:#000
@@ -87,6 +93,7 @@ graph TB
     style AppIns fill:#e8daef,stroke:#8e44ad,stroke-width:2px,color:#000
     style Logs fill:#e8daef,stroke:#8e44ad,stroke-width:2px,color:#000
 
-    linkStyle 0,1,2,3,4,5,6,7 stroke:#333,stroke-width:3px
-    linkStyle 8,9,10,11,12,13,14 stroke:#8e44ad,stroke-width:2.5px,stroke-dasharray:6
+    linkStyle 0,1,2,3,4,5,6,7,9 stroke:#333,stroke-width:3px
+    linkStyle 8 stroke:#0078d4,stroke-width:2.5px,stroke-dasharray:4
+    linkStyle 10,11,12,13,14,15,16,17,18 stroke:#8e44ad,stroke-width:2.5px,stroke-dasharray:6
 ```
