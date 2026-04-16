@@ -38,6 +38,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ContentAgentFactory.AppHost
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ContentAgentFactory.ServiceDefaults", "Lab\src\aspire\ContentAgentFactory.ServiceDefaults\ContentAgentFactory.ServiceDefaults.csproj", "{7ADEAFE4-AC2A-44D8-B35E-E1B88243C529}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "agent-evaluator", "agent-evaluator", "{5135458C-9659-4E70-9DB4-708635A44CB4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgentEvaluator", "Lab\src\agent-evaluator\AgentEvaluator\AgentEvaluator.csproj", "{D1B57879-2926-51C5-EA8F-1555EB31847B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -136,6 +140,18 @@ Global
 		{7ADEAFE4-AC2A-44D8-B35E-E1B88243C529}.Release|x64.Build.0 = Release|Any CPU
 		{7ADEAFE4-AC2A-44D8-B35E-E1B88243C529}.Release|x86.ActiveCfg = Release|Any CPU
 		{7ADEAFE4-AC2A-44D8-B35E-E1B88243C529}.Release|x86.Build.0 = Release|Any CPU
+		{D1B57879-2926-51C5-EA8F-1555EB31847B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D1B57879-2926-51C5-EA8F-1555EB31847B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D1B57879-2926-51C5-EA8F-1555EB31847B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D1B57879-2926-51C5-EA8F-1555EB31847B}.Debug|x64.Build.0 = Debug|Any CPU
+		{D1B57879-2926-51C5-EA8F-1555EB31847B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D1B57879-2926-51C5-EA8F-1555EB31847B}.Debug|x86.Build.0 = Debug|Any CPU
+		{D1B57879-2926-51C5-EA8F-1555EB31847B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D1B57879-2926-51C5-EA8F-1555EB31847B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D1B57879-2926-51C5-EA8F-1555EB31847B}.Release|x64.ActiveCfg = Release|Any CPU
+		{D1B57879-2926-51C5-EA8F-1555EB31847B}.Release|x64.Build.0 = Release|Any CPU
+		{D1B57879-2926-51C5-EA8F-1555EB31847B}.Release|x86.ActiveCfg = Release|Any CPU
+		{D1B57879-2926-51C5-EA8F-1555EB31847B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -156,6 +172,8 @@ Global
 		{8D559BF3-EE76-C704-98DF-8E566645B355} = {4CB9FF00-BAD1-0D37-BD78-DDE13AF1C690}
 		{7C77C64D-0015-4021-96FA-60D3F1FB46C1} = {8D559BF3-EE76-C704-98DF-8E566645B355}
 		{7ADEAFE4-AC2A-44D8-B35E-E1B88243C529} = {8D559BF3-EE76-C704-98DF-8E566645B355}
+		{5135458C-9659-4E70-9DB4-708635A44CB4} = {4CB9FF00-BAD1-0D37-BD78-DDE13AF1C690}
+		{D1B57879-2926-51C5-EA8F-1555EB31847B} = {5135458C-9659-4E70-9DB4-708635A44CB4}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B7602FD9-675F-42AF-B5EB-CCA88F38E946}

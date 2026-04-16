@@ -1,3 +1,5 @@
+using CommunityToolkit.Aspire.Hosting.Dapr;
+
 var builder = DistributedApplication.CreateBuilder(args);
 
 // Load Lab/.env for local development.
@@ -59,9 +61,29 @@ var podcasterAgent = builder.AddPythonApp(
     .WithOtlpExporter();
 
 // ── agent-creator (.NET) ──────────────────────────────────────────────────────
+var daprComponentsDir = Path.GetFullPath(
+    Path.Combine(builder.AppHostDirectory, "..", "..", "..", "dapr", "components"));
+
 builder.AddProject<Projects.AgentCreator>("agent-creator")
     .WithHttpEndpoint(port: 8002, name: "http-agent-creator")
-    .WithEnvironment(injectServiceEnv);
+    .WithEnvironment(injectServiceEnv)
+    .WithDaprSidecar(new DaprSidecarOptions
+    {
+        AppId = "agent-creator",
+        AppPort = 8002,
+        ResourcesPaths = [daprComponentsDir]
+    });
+
+// ── agent-evaluator (.NET) ────────────────────────────────────────────────────
+builder.AddProject<Projects.AgentEvaluator>("agent-evaluator")
+    .WithHttpEndpoint(port: 8005, name: "http-agent-evaluator")
+    .WithEnvironment(injectServiceEnv)
+    .WithDaprSidecar(new DaprSidecarOptions
+    {
+        AppId = "agent-evaluator",
+        AppPort = 8005,
+        ResourcesPaths = [daprComponentsDir]
+    });
 
 // ── dev-ui ────────────────────────────────────────────────────────────────────
 // Static nginx site on port 8080. Browser-side JS calls agents at
