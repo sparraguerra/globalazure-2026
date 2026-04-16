@@ -40,6 +40,11 @@ docker compose up     # starts agents 1-3 + dev-ui
 
 Without Docker, see the step-by-step guide: [Lab/docs/how-to-run-locally.md](Lab/docs/how-to-run-locally.md).
 
+## Talk Materials
+
+- [Lab/docs/stop-building-apis-forge-agents-talk-guide.md](Lab/docs/stop-building-apis-forge-agents-talk-guide.md) — project explanation, demo narrative, and audience Q&A for the session.
+- [Lab/docs/stop-building-apis-forge-agents-speaker-summary.md](Lab/docs/stop-building-apis-forge-agents-speaker-summary.md) — short speaker briefing.
+
 ### Verify
 
 ```bash
