@@ -14,12 +14,16 @@ internal sealed class OutputExecutor() : Executor<ContentCreatorAgent.ContentRes
     /// <summary>Last result produced by this executor, for retrieval after workflow completes.</summary>
     public object? LastResult { get; private set; }
 
+    /// <summary>Typed content results produced by this executor, for Dapr pubsub publishing.</summary>
+    public ContentCreatorAgent.ContentResults? LastContentResults { get; private set; }
+
     public override ValueTask<object> HandleAsync(
         ContentCreatorAgent.ContentResults contentResults, IWorkflowContext context, CancellationToken cancellationToken = default)
     {
         using var activity = _activitySource.StartActivity("pipeline_output", ActivityKind.Internal);
         activity?.SetTag("gen_ai.operation.name", "pipeline_output");
 
+        LastContentResults = contentResults;
         var result = ContentCreatorAgent.PackageResult(
             contentResults.Topic, contentResults.Blog, contentResults.Social, contentResults.SourceCount);
 

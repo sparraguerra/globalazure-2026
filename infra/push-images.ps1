@@ -22,6 +22,7 @@ $root = Join-Path $PSScriptRoot ".."
 $services = @(
     @{ Name = "agent-research";  Context = "$root\Lab\src\agent-research";  Dockerfile = "Dockerfile" }
     @{ Name = "agent-creator";   Context = "$root\Lab\src";   Dockerfile = "agent-creator\AgentCreator\Dockerfile" }
+    @{ Name = "agent-evaluator"; Context = "$root\Lab\src";   Dockerfile = "agent-evaluator\AgentEvaluator\Dockerfile" }
     @{ Name = "agent-podcaster"; Context = "$root\Lab\src\agent-podcaster"; Dockerfile = "Dockerfile" }
     @{ Name = "dev-ui";          Context = "$root\Lab\src\dev-ui";          Dockerfile = "Dockerfile" }
     #@{ Name = "tts-server";      Context = "$root\Lab\src\tts-server";      Dockerfile = "Dockerfile" }

@@ -1,25 +1,25 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>AgentCreator</RootNamespace>
-    <UserSecretsId>500301d6-9ed3-4bdf-b45e-e6d3395fe108</UserSecretsId>
+    <RootNamespace>AgentEvaluator</RootNamespace>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <DockerfileContext>..\..</DockerfileContext>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Azure.AI.OpenAI" Version="2.8.0-beta.1" />
+    <PackageReference Include="Azure.AI.Projects" Version="2.0.0" />
+    <PackageReference Include="Azure.Identity" Version="1.20.0" />
     <PackageReference Include="Dapr.AspNetCore" Version="1.14.0" />
     <PackageReference Include="Microsoft.Extensions.AI" Version="10.3.0" />
     <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="10.3.0" />
-    <PackageReference Include="Azure.AI.OpenAI" Version="2.8.0-beta.1" />
     <!-- Microsoft Agent Framework (https://github.com/microsoft/agent-framework) -->
     <PackageReference Include="Microsoft.Agents.AI" Version="1.0.0-rc3" />
     <PackageReference Include="Microsoft.Agents.AI.OpenAI" Version="1.0.0-rc3" />
     <PackageReference Include="Microsoft.Agents.AI.Workflows" Version="1.0.0-rc3" />
-    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0" />
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.15.0" />
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.0" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.15.0" />

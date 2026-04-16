@@ -12,6 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton<ContentCreatorAgent>();
 builder.Services.AddSingleton<ContentFactoryWorkflow>();
 builder.Services.AddSingleton<A2AAuthFilter>();
+builder.Services.AddDaprClient();
 
 builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy =>

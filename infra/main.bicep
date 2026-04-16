@@ -23,6 +23,7 @@ param azureOpenAiDeployment string = 'gpt-4o'
 var defaultImage = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
 param agentResearchImageName string = ''
 param agentCreatorImageName string = ''
+param agentEvaluatorImageName string = ''
 param devUiImageName string = ''
 param agentPodcasterImageName string = ''
 param ttsServerImageName string = ''
@@ -408,6 +409,7 @@ resource agentCreator 'Microsoft.App/containerApps@2024-03-01' = {
           image: agentCreatorImageName != '' ? agentCreatorImageName : defaultImage
           resources: { cpu: json('0.5'), memory: '1Gi' }
           env: [
+            { name: 'AZURE_AI_PROJECT_ENDPOINT', value: foundryProject.properties.endpoints.api }
             { name: 'AZURE_OPENAI_ENDPOINT', value: resolvedOpenAiEndpoint }
             { name: 'AZURE_OPENAI_API_KEY', secretRef: 'azure-openai-key' }
             { name: 'AZURE_OPENAI_DEPLOYMENT', value: azureOpenAiDeployment }
@@ -426,7 +428,60 @@ resource agentCreator 'Microsoft.App/containerApps@2024-03-01' = {
   }
 }
 
-// Agent 3 - Podcaster (Python/FastAPI)
+// Agent 3 - Content Evaluator (.NET)
+resource agentEvaluator 'Microsoft.App/containerApps@2024-03-01' = {
+  name: '${baseName}-agent-evaluator'
+  location: location
+  tags: { 'azd-service-name': 'agent-evaluator' }
+  properties: {
+    managedEnvironmentId: acaEnv.id
+    configuration: {
+      ingress: {
+        external: true
+        targetPort: 8002
+        transport: 'http'
+      }
+      registries: [
+        {
+          server: acr.properties.loginServer
+          username: acr.listCredentials().username
+          passwordSecretRef: 'acr-password'
+        }
+      ]
+      secrets: [
+        { name: 'acr-password', value: acr.listCredentials().passwords[0].value }
+        { name: 'azure-openai-key', value: resolvedOpenAiApiKey }
+        { name: 'a2a-auth-token', value: a2aToken }
+      ]
+    }
+    template: {
+      containers: [
+        {
+          name: 'agent-evaluator'
+          image: agentEvaluatorImageName != '' ? agentEvaluatorImageName : defaultImage
+          resources: { cpu: json('0.5'), memory: '1Gi' }
+          env: [
+            { name: 'AZURE_AI_PROJECT_ENDPOINT', value: foundryProject.properties.endpoints.api }
+            { name: 'AZURE_OPENAI_ENDPOINT', value: resolvedOpenAiEndpoint }
+            { name: 'AZURE_OPENAI_API_KEY', secretRef: 'azure-openai-key' }
+            { name: 'AZURE_OPENAI_DEPLOYMENT', value: azureOpenAiDeployment }
+            { name: 'CONTENT_FACTORY_MODE', value: 'lab' }
+            { name: 'OTEL_SERVICE_NAME', value: 'evaluator-agent' }
+            // Capture gen_ai prompt/response content for the App Insights Agents blade
+            { name: 'OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT', value: 'true' }
+            // OTEL_EXPORTER_OTLP_ENDPOINT is auto-injected by ACA managed OTEL agent
+            { name: 'A2A_AUTH_ENABLED', value: 'true' }
+            { name: 'A2A_AUTH_TOKEN', secretRef: 'a2a-auth-token' }
+          ]
+        }
+      ]
+      scale: { minReplicas: 1, maxReplicas: 1 }
+    }
+  }
+}
+
+
+// Agent 4 - Podcaster (Python/FastAPI)
 resource agentPodcaster 'Microsoft.App/containerApps@2024-03-01' = {
   name: '${baseName}-agent-podcaster'
   location: location
