@@ -78,19 +78,50 @@ Each MAF executor emits spans under the shared `creator-agent` source — spans 
 
 ## Data Flow
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  Container Apps Environment                             │
-│                                                         │
-│  research-agent   creator-agent   podcaster-agent  tts  │
-│   (OTEL SDK)       (OTEL SDK)      (OTEL SDK)    (SDK) │
-│       │                │               │           │    │
-│       └───────┬────────┴───────────────┴───────────┘    │
-│               ▼                                         │
-│      Managed OTEL Agent / Collector                     │
-└───────────────┬─────────────────────────────────────────┘
-                ▼
-   Application Insights + Log Analytics
+```mermaid
+---
+config:
+  theme: base
+  themeVariables:
+    lineColor: "#333"
+    primaryColor: "#fff"
+  flowchart:
+    curve: basis
+---
+graph TB
+    subgraph Env["Container Apps Environment"]
+        direction LR
+        RA["research-agent<br/>Python · LangGraph<br/>OTEL SDK"]
+        CA["creator-agent<br/>.NET 10 · MAF<br/>OTEL SDK"]
+        PA["podcaster-agent<br/>Python · Copilot SDK<br/>OTEL SDK"]
+        TTS["tts-server<br/>Python · XTTS-v2<br/>OTEL SDK"]
+        Collector["Managed OTEL Agent<br/>OTLP/gRPC receiver<br/>auto-injected endpoint"]
+    end
+
+    subgraph Backends["Azure Observability"]
+        AppIns["Application Insights<br/>Traces · Requests · Dependencies<br/>gen_ai.* spans"]
+        Logs["Log Analytics Workspace<br/>AppRequests · AppTraces<br/>ContainerAppConsoleLogs"]
+    end
+
+    RA -->|"OTLP/gRPC"| Collector
+    CA -->|"OTLP/gRPC"| Collector
+    PA -->|"OTLP/gRPC"| Collector
+    TTS -->|"OTLP/gRPC"| Collector
+    Collector ==> AppIns
+    AppIns ==> Logs
+
+    %% Subgraph frames
+    style Env fill:#1a1a1a,stroke:#000,stroke-width:3px,color:#fff
+    style Backends fill:#1a1a1a,stroke:#000,stroke-width:3px,color:#fff
+
+    %% Inner nodes
+    style RA fill:#c3e6cb,stroke:#28a745,stroke-width:2px,color:#000
+    style CA fill:#c3e6cb,stroke:#28a745,stroke-width:2px,color:#000
+    style PA fill:#c3e6cb,stroke:#28a745,stroke-width:2px,color:#000
+    style TTS fill:#c3e6cb,stroke:#28a745,stroke-width:2px,color:#000
+    style Collector fill:#d5f5e3,stroke:#27ae60,stroke-width:2px,color:#000
+    style AppIns fill:#e8daef,stroke:#8e44ad,stroke-width:2px,color:#000
+    style Logs fill:#e8daef,stroke:#8e44ad,stroke-width:2px,color:#000
 ```
 
 1. Service OTEL SDKs emit spans and log events via OTLP/gRPC to the injected endpoint

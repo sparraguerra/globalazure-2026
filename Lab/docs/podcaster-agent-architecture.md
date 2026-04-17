@@ -12,6 +12,103 @@ warmup_tts → enrich_sources → generate_script → apply_pronunciations → d
 
 Built as an async pipeline in [agent.py](../src/agent-podcaster/agent.py). TTS warmup runs concurrently with source enrichment and script generation to hide cold-start latency.
 
+## Architecture Diagram
+
+```mermaid
+---
+config:
+  theme: base
+  themeVariables:
+    lineColor: "#333"
+    primaryColor: "#fff"
+  flowchart:
+    curve: basis
+---
+graph TB
+    subgraph A2A["A2A Interface"]
+        Client(["Client<br/>tasks/send → 202 + task_id"])
+        Poll(["GET /tasks/{id}<br/>poll for status"])
+    end
+
+    subgraph Pipeline["Async Pipeline"]
+        direction LR
+        WU["warmup_tts<br/>concurrent start"]
+        EN["enrich_sources<br/>top-5 URLs · 6 000 chars"]
+        GS["generate_script<br/>Copilot SDK BYOK<br/>3-turn multi-turn"]
+        AP["apply_pronunciations<br/>60+ static terms"]
+        DP["dynamic_pronunciations<br/>Copilot SDK session 2<br/>LLM-identified terms"]
+        AW["await_warmup"]
+        SA["synthesize_audio<br/>per speaker turn"]
+        AA["assemble_audio<br/>pydub · 150ms gaps"]
+        UP["upload_audio<br/>Azure Blob Storage<br/>24h SAS URL"]
+    end
+
+    subgraph TTS["TTS Backend (TTS_MODE)"]
+        direction LR
+        XT["XTTS-v2 full<br/>GPU · custom voice samples"]
+        AZ["Azure OpenAI TTS lab<br/>nova · onyx"]
+    end
+
+    subgraph AI["Azure OpenAI / Foundry"]
+        AOAI["GPT-4o<br/>Copilot SDK BYOK<br/>script + pronunciations"]
+    end
+
+    subgraph Store["Storage"]
+        Blob["Azure Blob Storage<br/>podcasts container"]
+    end
+
+    OTel["OpenTelemetry<br/>podcaster-agent source · OTLP/gRPC"]
+
+    Client ==> WU
+    Client ==> EN
+    EN ==> GS
+    GS ==> AP
+    AP ==> DP
+    DP ==> SA
+    WU -.->|"warmup ready"| AW
+    AW ==> SA
+    SA ==> AA
+    AA ==> UP
+    UP ==> Blob
+    Blob -.->|"SAS URL"| Poll
+
+    GS --> AOAI
+    DP --> AOAI
+    SA --> XT
+    SA --> AZ
+
+    WU -. "spans" .-> OTel
+    GS -. "spans" .-> OTel
+    SA -. "spans" .-> OTel
+    UP -. "spans" .-> OTel
+
+    style A2A      fill:#0f2027,stroke:#0078D4,stroke-width:3px,color:#fff
+    style Pipeline fill:#0f2027,stroke:#28a745,stroke-width:3px,color:#fff
+    style TTS      fill:#0f2027,stroke:#e6a800,stroke-width:3px,color:#fff
+    style AI       fill:#0f2027,stroke:#e6a800,stroke-width:3px,color:#fff
+    style Store    fill:#0f2027,stroke:#e74c3c,stroke-width:3px,color:#fff
+
+    style Client fill:#0078D4,stroke:#004E8C,stroke-width:2px,color:#fff
+    style Poll   fill:#0078D4,stroke:#004E8C,stroke-width:2px,color:#fff
+
+    style WU fill:#1a7340,stroke:#28a745,stroke-width:2px,color:#fff
+    style EN fill:#1a7340,stroke:#28a745,stroke-width:2px,color:#fff
+    style GS fill:#1a7340,stroke:#28a745,stroke-width:2px,color:#fff
+    style AP fill:#1a7340,stroke:#28a745,stroke-width:2px,color:#fff
+    style DP fill:#1a7340,stroke:#28a745,stroke-width:2px,color:#fff
+    style AW fill:#1a7340,stroke:#28a745,stroke-width:2px,color:#fff
+    style SA fill:#1a7340,stroke:#28a745,stroke-width:2px,color:#fff
+    style AA fill:#1a7340,stroke:#28a745,stroke-width:2px,color:#fff
+    style UP fill:#1a7340,stroke:#28a745,stroke-width:2px,color:#fff
+
+    style XT   fill:#7a5800,stroke:#e6a800,stroke-width:2px,color:#fff
+    style AZ   fill:#7a5800,stroke:#e6a800,stroke-width:2px,color:#fff
+    style AOAI fill:#FFB900,stroke:#C08000,stroke-width:2px,color:#000
+
+    style Blob fill:#922b21,stroke:#e74c3c,stroke-width:2px,color:#fff
+    style OTel fill:#5b2c6f,stroke:#8e44ad,stroke-width:2px,color:#fff
+```
+
 ## Script Generation (Copilot SDK — Multi-Turn with Tools)
 
 Uses the **GitHub Copilot SDK** in BYOK mode with Azure OpenAI. The `copilot.exe` binary is spawned as a subprocess by `CopilotClient`, communicating via stdio JSON-RPC. BYOK means the binary routes requests to your Azure OpenAI endpoint instead of GitHub Copilot service. In [script_generator.py](../src/agent-podcaster/script_generator.py):

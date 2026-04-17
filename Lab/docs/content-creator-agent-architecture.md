@@ -4,6 +4,89 @@
 
 **Stack:** C# / .NET 10 / ASP.NET Minimal API / `Microsoft.Agents.AI` + `Microsoft.Agents.AI.Workflows` / Azure OpenAI / OpenTelemetry
 
+## Architecture Diagram
+
+```mermaid
+---
+config:
+  theme: base
+  themeVariables:
+    lineColor: "#333"
+    primaryColor: "#fff"
+  flowchart:
+    curve: basis
+---
+graph TB
+    subgraph A2A["A2A Interface"]
+        Client(["Client<br/>tasks/send · SendMessage · message/send"])
+        Card["/.well-known/agent.json<br/>A2A v0.3.0 · 2 skills"]
+    end
+
+    subgraph Workflow["WorkflowBuilder Pipeline (.NET 10 · MAF)"]
+        direction LR
+        E1["BriefInputExecutor<br/>Validate brief<br/>extract topic"]
+        E2["BlogGenerationExecutor<br/>blog-writer ChatClientAgent<br/>800–1 200 word article"]
+        E3["SocialGenerationExecutor<br/>social-writer ChatClientAgent<br/>LinkedIn + 3-post thread"]
+        E4["OutputExecutor<br/>Assemble content_package"]
+    end
+
+    subgraph Ctx["IWorkflowContext State"]
+        direction LR
+        S1["topic · sources"]
+        S2["blogResult"]
+        S3["socialResult"]
+    end
+
+    subgraph AI["Azure OpenAI / Foundry"]
+        AOAI["GPT-4o<br/>LLM completions<br/>retry · fallback"]
+    end
+
+    subgraph Out["Output"]
+        CP["content_package<br/>blog_post · linkedin · social_thread"]
+    end
+
+    OTel["OpenTelemetry<br/>creator-agent source · OTLP/gRPC"]
+
+    Client ==>|"/a2a or /pipeline"| E1
+    E1 ==> E2
+    E2 ==> E3
+    E3 ==> E4
+    E4 ==> CP
+
+    E1 -. "write" .-> S1
+    E2 -. "read topic / write blogResult" .-> S2
+    E3 -. "read blogResult / write socialResult" .-> S3
+
+    E2 --> AOAI
+    E3 --> AOAI
+
+    E2 -. "spans" .-> OTel
+    E3 -. "spans" .-> OTel
+
+    style A2A      fill:#0f2027,stroke:#0078D4,stroke-width:3px,color:#fff
+    style Workflow fill:#0f2027,stroke:#28a745,stroke-width:3px,color:#fff
+    style Ctx      fill:#0f2027,stroke:#e6a800,stroke-width:3px,color:#fff
+    style AI       fill:#0f2027,stroke:#e6a800,stroke-width:3px,color:#fff
+    style Out      fill:#0f2027,stroke:#e74c3c,stroke-width:3px,color:#fff
+
+    style Client fill:#0078D4,stroke:#004E8C,stroke-width:2px,color:#fff
+    style Card   fill:#444,stroke:#aaa,stroke-width:2px,color:#fff
+
+    style E1 fill:#1a7340,stroke:#28a745,stroke-width:2px,color:#fff
+    style E2 fill:#1a7340,stroke:#28a745,stroke-width:2px,color:#fff
+    style E3 fill:#1a7340,stroke:#28a745,stroke-width:2px,color:#fff
+    style E4 fill:#1a7340,stroke:#28a745,stroke-width:2px,color:#fff
+
+    style S1 fill:#7a5800,stroke:#e6a800,stroke-width:2px,color:#fff
+    style S2 fill:#7a5800,stroke:#e6a800,stroke-width:2px,color:#fff
+    style S3 fill:#7a5800,stroke:#e6a800,stroke-width:2px,color:#fff
+
+    style AOAI fill:#FFB900,stroke:#C08000,stroke-width:2px,color:#000
+
+    style CP   fill:#922b21,stroke:#e74c3c,stroke-width:2px,color:#fff
+    style OTel fill:#5b2c6f,stroke:#8e44ad,stroke-width:2px,color:#fff
+```
+
 ## Executor-Owned Agents (CustomAgentExecutors Pattern)
 
 Each workflow executor constructs its own `ChatClientAgent` with role-specific `instructions` and manages its own `AgentSession` — following the MAF best practice where executors own the agent lifecycle:

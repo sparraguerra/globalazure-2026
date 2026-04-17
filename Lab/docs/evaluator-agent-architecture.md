@@ -52,23 +52,21 @@ graph TB
     FES --> FR
     FR --> FoundryEvals
 
-    %% Subgraph frames
-    style Trigger fill:#1a1a1a,stroke:#000,stroke-width:3px,color:#fff
-    style Core fill:#1a1a1a,stroke:#000,stroke-width:3px,color:#fff
-    style Output fill:#1a1a1a,stroke:#000,stroke-width:3px,color:#fff
-    style AI fill:#1a1a1a,stroke:#000,stroke-width:3px,color:#fff
-    style A2ACard fill:#1a1a1a,stroke:#000,stroke-width:3px,color:#fff
+    style Trigger  fill:#0f2027,stroke:#0078D4,stroke-width:3px,color:#fff
+    style Core     fill:#0f2027,stroke:#28a745,stroke-width:3px,color:#fff
+    style Output   fill:#0f2027,stroke:#e6a800,stroke-width:3px,color:#fff
+    style AI       fill:#0f2027,stroke:#e6a800,stroke-width:3px,color:#fff
+    style A2ACard  fill:#0f2027,stroke:#666,stroke-width:3px,color:#fff
 
-    %% Inner boxes
-    style DaprSub fill:#cce5ff,stroke:#0078d4,stroke-width:2px,color:#000
-    style EA fill:#c3e6cb,stroke:#28a745,stroke-width:2px,color:#000
-    style CES fill:#c3e6cb,stroke:#28a745,stroke-width:2px,color:#000
-    style FES fill:#c3e6cb,stroke:#28a745,stroke-width:2px,color:#000
-    style ER fill:#fff3cd,stroke:#e6a800,stroke-width:2px,color:#000
-    style FR fill:#fadbd8,stroke:#e74c3c,stroke-width:2px,color:#000
-    style AOAI fill:#fff3cd,stroke:#e6a800,stroke-width:2px,color:#000
-    style FoundryEvals fill:#fadbd8,stroke:#e74c3c,stroke-width:2px,color:#000
-    style Card fill:#e2e2e2,stroke:#666,stroke-width:2px,color:#000
+    style DaprSub      fill:#0078D4,stroke:#004E8C,stroke-width:2px,color:#fff
+    style EA           fill:#1a7340,stroke:#28a745,stroke-width:2px,color:#fff
+    style CES          fill:#1a7340,stroke:#28a745,stroke-width:2px,color:#fff
+    style FES          fill:#1a7340,stroke:#28a745,stroke-width:2px,color:#fff
+    style ER           fill:#FFB900,stroke:#C08000,stroke-width:2px,color:#000
+    style FR           fill:#922b21,stroke:#e74c3c,stroke-width:2px,color:#fff
+    style AOAI         fill:#FFB900,stroke:#C08000,stroke-width:2px,color:#000
+    style FoundryEvals fill:#922b21,stroke:#e74c3c,stroke-width:2px,color:#fff
+    style Card         fill:#444,stroke:#aaa,stroke-width:2px,color:#fff
 ```
 
 ## Evaluation Services

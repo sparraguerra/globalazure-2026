@@ -8,6 +8,70 @@ LangGraph agent that searches Azure sources, LLM-ranks results by audience inten
 plan_research → search_docs → search_code → search_blogs → rank_sources → fetch_content → synthesize
 ```
 
+## Architecture Diagram
+
+```mermaid
+flowchart TD
+    Client(["Client / A2A Request"])
+    FastAPI["FastAPI<br/>main.py"]
+    PR["plan_research"]
+
+    Client -->|"tasks/send · SendMessage<br/>message/send"| FastAPI
+    FastAPI --> PR
+
+    subgraph Search ["Search Phase (~180 slots)"]
+        SD["search_docs<br/>Microsoft Learn API<br/>40 results"]
+        SC["search_code<br/>GitHub Azure-Samples<br/>25 results"]
+        SB["search_blogs<br/>Azure Blog + Tech Community RSS<br/>50 + 50 results"]
+        SU["search_blogs (updates)<br/>Azure Updates RSS<br/>15 results"]
+    end
+
+    PR --> SD & SC & SB & SU
+
+    RS["rank_sources<br/>AzureChatOpenAI<br/>Extract audience · Re-rank by relevance"]
+
+    SD & SC & SB & SU --> RS
+
+    subgraph Fetch ["Fetch Phase"]
+        FC["fetch_content<br/>Top 25 ranked URLs<br/>BeautifulSoup · 3 000 chars/page"]
+        EL["extract_links<br/>Depth-1 outbound links<br/>Trusted Azure-ecosystem domains · cap 30"]
+        SF["secondary fetch<br/>Top 20 linked pages<br/>3 000 chars/page"]
+    end
+
+    RS --> FC
+    FC -->|"HTML + content"| EL
+    EL -->|"Up to 30 new URLs"| SF
+
+    SY["synthesize<br/>Brief · 25 sources · LLM debrief summary"]
+    FC --> SY
+    SF --> SY
+
+    A2A(["A2A Response<br/>Structured brief"])
+    SY --> A2A
+
+    OTel["OpenTelemetry<br/>OTLP/gRPC · gen_ai.* spans<br/>FastAPI · httpx · OpenAI SDK"]
+    FastAPI -.->|traces| OTel
+    PR & RS & SY -.->|spans| OTel
+
+    style Search fill:#0f2027,stroke:#28a745,stroke-width:3px,color:#fff
+    style Fetch  fill:#0f2027,stroke:#e74c3c,stroke-width:3px,color:#fff
+
+    style Client fill:#0078D4,stroke:#004E8C,stroke-width:2px,color:#fff
+    style A2A    fill:#0078D4,stroke:#004E8C,stroke-width:2px,color:#fff
+    style FastAPI fill:#50E6FF,stroke:#0078D4,stroke-width:2px,color:#003
+    style PR     fill:#773ADC,stroke:#4B1E8F,stroke-width:2px,color:#fff
+    style SD     fill:#1a7340,stroke:#28a745,stroke-width:2px,color:#fff
+    style SC     fill:#1a7340,stroke:#28a745,stroke-width:2px,color:#fff
+    style SB     fill:#1a7340,stroke:#28a745,stroke-width:2px,color:#fff
+    style SU     fill:#1a7340,stroke:#28a745,stroke-width:2px,color:#fff
+    style RS     fill:#FFB900,stroke:#C08000,stroke-width:2px,color:#000
+    style FC     fill:#922b21,stroke:#e74c3c,stroke-width:2px,color:#fff
+    style EL     fill:#922b21,stroke:#e74c3c,stroke-width:2px,color:#fff
+    style SF     fill:#922b21,stroke:#e74c3c,stroke-width:2px,color:#fff
+    style SY     fill:#D83B01,stroke:#961F00,stroke-width:2px,color:#fff
+    style OTel   fill:#505050,stroke:#222,stroke-width:2px,color:#fff
+```
+
 Built as a `StateGraph` in [agent.py](../src/agent-research/agent.py):
 
 ```python
