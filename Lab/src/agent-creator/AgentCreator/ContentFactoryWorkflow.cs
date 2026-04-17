@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Text.Json;
 using AgentCreator.Executors;
+using AgentCreator.Models;
+using Dapr.Client;
 using Microsoft.Agents.AI.Workflows;
 
 namespace AgentCreator;
@@ -18,10 +20,12 @@ public class ContentFactoryWorkflow
 {
     private static readonly ActivitySource _activitySource = new("content-agent");
     private readonly ContentCreatorAgent _agent;
+    private readonly DaprClient _daprClient;
 
-    public ContentFactoryWorkflow(ContentCreatorAgent agent)
+    public ContentFactoryWorkflow(ContentCreatorAgent agent, DaprClient daprClient)
     {
         _agent = agent;
+        _daprClient = daprClient;
     }
 
     /// <summary>
@@ -48,6 +52,7 @@ public class ContentFactoryWorkflow
                 LinkedIn = $"Deep dive into {parsed.Topic}! #Azure #CloudNative #AI",
                 Tweets = [$"Thread: {parsed.Topic} (1/3)", $"Key takeaway from {parsed.Topic} (2/3)", "Full article linked below! (3/3)"]
             };
+            await PublishContentCreatedAsync(parsed.Topic, blog, social);
             return ContentCreatorAgent.PackageResult(parsed.Topic, blog, social, parsed.Sources.Count);
         }
 
@@ -85,9 +90,42 @@ public class ContentFactoryWorkflow
         result ??= output.LastResult;
 
         if (result == null)
+        {
             throw new InvalidOperationException("Workflow completed without producing output");
+        }            
+
+        if (output.LastContentResults is { } contentResults)
+        {
+            await PublishContentCreatedAsync(contentResults.Topic, contentResults.Blog, contentResults.Social);
+        }
 
         Console.WriteLine("[Workflow] Content factory pipeline complete");
         return result;
+    }
+
+    private async Task PublishContentCreatedAsync(
+        string topic,
+        ContentCreatorAgent.BlogResult blog,
+        ContentCreatorAgent.SocialResult social)
+    {
+        try
+        {
+            var message = new ContentCreatedMessage
+            {
+                Topic = topic,
+                BlogMarkdown = blog.Markdown,
+                WordCount = blog.WordCount,
+                SourcesUsed = blog.SourcesUsed,
+                LinkedIn = social.LinkedIn,
+                Tweets = social.Tweets,
+                GeneratedAt = DateTimeOffset.UtcNow
+            };
+            await _daprClient.PublishEventAsync("pubsub", "content-created", message);
+            Console.WriteLine($"[Workflow] Published content-created event to Dapr pubsub for topic: '{topic}'");
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[Workflow] Dapr pubsub publish failed (non-fatal): {ex.Message}");
+        }
     }
 }

@@ -25,6 +25,15 @@ services:
       context: ..
       remoteBuild: true
 
+  agent-evaluator:
+    project: ./Lab/src/agent-evaluator/AgentEvaluator
+    language: dotnet
+    host: containerapp
+    docker:
+      path: ../Dockerfile
+      context: ..
+      remoteBuild: true
+
   dev-ui:
     project: ./Lab/src/dev-ui
     language: js
