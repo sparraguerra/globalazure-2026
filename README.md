@@ -1,20 +1,21 @@
-# 3 AI Agents, Real Tools and Models -- All on Azure Container Apps with Foundry
+# 4 AI Agents, Real Tools and Models -- All on Azure Container Apps with Foundry
 
 A multi-agent content factory that researches Microsoft technology topics, creates multi-format content, and generates podcasts. Built to familiarize with running and hosting AI Agents on Azure Container Apps, explore agent observability, and register and evaluate agents in Microsoft Foundry.
-
-> **Lab participants:** follow the instructor or check [the full lab manual](Lab/docs/lab-manual.md).
 
 ## Architecture
 
 ```
 [Dev UI] --> [Agent 1 - Researcher] --> [Agent 2 - Content Creator] --> [Agent 3 - Podcaster]
+                                                  |
+                                         [Agent 4 - Evaluator] (via Dapr pub/sub)
 ```
 
-Enter a topic (e.g. *"Write a comprehensive blog post about Azure Container Apps for developers"*). Three agents collaborate:
+Enter a topic (e.g. *"Write a comprehensive blog post about Azure Container Apps for developers"*). Four agents collaborate:
 
 1. **Agent 1 — Tech Research** (LangGraph / Python) — Searches Microsoft Learn, Azure Blog, Tech Community, Azure Updates, and GitHub. Uses AI for intent detection, ranks sources by relevance, fetches full content from top hits, follows depth-1 links from trusted domains, and synthesizes a research brief.
 2. **Agent 2 — Content Creator** (Microsoft Agent Framework / .NET) — Transforms the research brief into an original blog post, LinkedIn post, and Twitter thread, all grounded in real sources.
 3. **Agent 3 — Podcaster** (GitHub Copilot SDK / Python) — Creates an engaging podcast script and generates audio. Can use Azure OpenAI TTS or a custom XTTS-v2 server on serverless GPUs.
+4. **Agent 4 — Evaluator** (Microsoft Agent Framework / .NET) — Automatically evaluates AI-generated content packages. Triggered via **Dapr pub/sub** (`content-created` topic). Runs a fast **LLM-as-judge** evaluation locally and submits async **cloud evaluations** to the Azure AI Foundry Evals API.
 
 **Dev UI** — A lightweight HTML frontend for submitting topics and viewing results from all three agents.
 
@@ -46,6 +47,7 @@ Without Docker, see the step-by-step guide: [Lab/docs/how-to-run-locally.md](Lab
 curl http://localhost:8001/health   # {"status":"healthy","agent":"research-agent"}
 curl http://localhost:8002/health   # {"status":"healthy","agent":"creator-agent"}
 curl http://localhost:8003/health   # {"status":"healthy","agent":"podcaster-agent"}
+curl http://localhost:8005/health   # {"status":"healthy","agent":"evaluator-agent"}
 ```
 
 ## Project Structure
@@ -60,6 +62,7 @@ Lab/
     agent-research/          # Agent 1: Python, LangGraph, FastAPI
     agent-creator/           # Agent 2: .NET 10, Microsoft Agent Framework
     agent-podcaster/         # Agent 3: Python, GitHub Copilot SDK, TTS
+    agent-evaluator/         # Agent 4: .NET 10, Microsoft Agent Framework, Dapr, Foundry Evals
     tts-server/              # GPU XTTS-v2 server (full mode only)
     dev-ui/                  # Static HTML + nginx (port 8080)
 infra/
@@ -75,35 +78,10 @@ infra/
 | Agent 1 — Research | Python 3.11+, LangGraph, LangChain, FastAPI, httpx, BeautifulSoup |
 | Agent 2 — Creator | .NET 10, Microsoft Agent Framework, ASP.NET Minimal APIs |
 | Agent 3 — Podcaster | Python 3.10+, GitHub Copilot SDK, pydub, httpx |
+| Agent 4 — Evaluator | .NET 10, Microsoft Agent Framework, Dapr, Azure AI Foundry Evals API |
 | TTS (lab mode) | Azure OpenAI `tts-1` |
 | TTS (full mode) | Coqui XTTS-v2 on GPU, Azure OpenAI fallback |
 | Protocol | A2A (Agent-to-Agent) |
 | Infrastructure | Azure Container Apps, Azure Container Registry, Bicep |
 | Observability | OpenTelemetry, Azure Application Insights |
 | LLM | Azure OpenAI GPT-4o |
-
-## Questions?
-
-Create an issue in the repo with your question or concern.
-
-## Contributing
-
-This project welcomes contributions and suggestions. Most contributions require you to agree to a
-Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
-the rights to use your contribution. For details, visit [Contributor License Agreements](https://cla.opensource.microsoft.com).
-
-When you submit a pull request, a CLA bot will automatically determine whether you need to provide
-a CLA and decorate the PR appropriately (e.g., status check, comment). Simply follow the instructions
-provided by the bot. You will only need to do this once across all repos using our CLA.
-
-This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
-For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
-contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
-
-## Trademarks
-
-This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft
-trademarks or logos is subject to and must follow
-[Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/legal/intellectualproperty/trademarks/usage/general).
-Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship.
-Any use of third-party trademarks or logos are subject to those third-party's policies.
