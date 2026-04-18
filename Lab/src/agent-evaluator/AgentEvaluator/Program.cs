@@ -13,6 +13,10 @@ builder.Services.AddSingleton<ContentEvaluationService>();
 builder.Services.AddSingleton<FoundryEvaluationService>();
 builder.Services.AddHttpClient<FoundryHostedEvaluatorService>();
 
+builder.Services.AddCors(options =>
+    options.AddDefaultPolicy(policy =>
+        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
+
 builder.AddServiceDefaults();
 
 builder.Services.AddOpenTelemetry()
@@ -24,6 +28,7 @@ builder.Services.AddOpenTelemetry()
 
 var app = builder.Build();
 
+app.UseCors();
 app.MapDefaultEndpoints();
 
 // UseCloudEvents must come before route handlers so it can unwrap the

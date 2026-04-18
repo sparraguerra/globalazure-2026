@@ -153,7 +153,7 @@
         .chip .lbl{color:var(--text-2);font-size:12px}
 
         /* ─── KPI Agent Cards ─── */
-        .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
+        .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
         .kpi-card{
             background:var(--bg-card);border:1px solid var(--border);
             border-radius:10px;padding:20px;transition:box-shadow .2s;
@@ -176,7 +176,7 @@
         }
         .config-card h3{font-size:14px;font-weight:600;color:var(--text-1);margin-bottom:16px}
         .cfg-grid{
-            display:grid;grid-template-columns:auto 1fr 1fr 1fr;
+            display:grid;grid-template-columns:auto 1fr 1fr 1fr 1fr;
             gap:8px 12px;align-items:center;
         }
         .cfg-label{font-size:12px;font-weight:600;color:var(--text-2);white-space:nowrap}
@@ -270,6 +270,9 @@
         ::-webkit-scrollbar-thumb{background:var(--scrollbar);border-radius:4px}
 
         /* ─── Responsive ─── */
+        @media(max-width:1100px){
+            .kpi-grid{grid-template-columns:repeat(2,1fr)}
+        }
         @media(max-width:900px){
             .sidebar{display:none}
             .main{margin-left:0}
@@ -314,6 +317,9 @@
         <a class="sidebar-item" href="#section-podcast" onclick="return navTo(this,'section-podcast')">
             <span class="sidebar-icon">&#127897;&#65039;</span> Podcast
         </a>
+        <a class="sidebar-item" href="#section-evals" onclick="return navTo(this,'section-evals')">
+            <span class="sidebar-icon">&#9989;</span> Evals
+        </a>
     </aside>
 
     <!-- ─── Main Content ─── -->
@@ -357,6 +363,14 @@
                 <div class="kpi-value" id="a3-status">Checking...</div>
                 <div class="kpi-sub">GitHub Copilot SDK / Python</div>
             </div>
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span class="status loading" id="s4"></span>
+                    <span class="kpi-title">Agent 4: Evaluator</span>
+                </div>
+                <div class="kpi-value" id="a4-status">Checking...</div>
+                <div class="kpi-sub">Microsoft Agent Framework / .NET</div>
+            </div>
         </div>
 
         <!-- Configuration -->
@@ -376,6 +390,10 @@
                     <input type="text" id="agent3-url" readonly value="http://localhost:8003" />
                     <button class="copy-btn" onclick="copyField('agent3-url')">&#128203;</button>
                 </div>
+                <div class="cfg-wrap">
+                    <input type="text" id="agent4-url" readonly value="http://localhost:8005" />
+                    <button class="copy-btn" onclick="copyField('agent4-url')">&#128203;</button>
+                </div>
 
                 <div class="cfg-label">A2A Card</div>
                 <div class="cfg-wrap">
@@ -390,6 +408,10 @@
                     <input type="text" id="agent3-card" readonly value="http://localhost:8003/.well-known/agent.json" style="cursor:pointer" onclick="window.open(this.value,'_blank')" />
                     <button class="copy-btn" onclick="event.stopPropagation();copyField('agent3-card')">&#128203;</button>
                 </div>
+                <div class="cfg-wrap">
+                    <input type="text" id="agent4-card" readonly value="http://localhost:8005/.well-known/agent.json" style="cursor:pointer" onclick="window.open(this.value,'_blank')" />
+                    <button class="copy-btn" onclick="event.stopPropagation();copyField('agent4-card')">&#128203;</button>
+                </div>
 
                 <div class="cfg-label">OTel Agent ID</div>
                 <div class="cfg-wrap">
@@ -403,6 +425,10 @@
                 <div class="cfg-wrap">
                     <input type="text" id="a3-otel" readonly value="" placeholder="—" />
                     <button class="copy-btn" onclick="copyField('a3-otel')">&#128203;</button>
+                </div>
+                <div class="cfg-wrap">
+                    <input type="text" id="a4-otel" readonly value="" placeholder="—" />
+                    <button class="copy-btn" onclick="copyField('a4-otel')">&#128203;</button>
                 </div>
             </div>
             <div class="token-row">
@@ -498,12 +524,14 @@
         function getAgent1Url() { return document.getElementById('agent1-url').value.trim(); }
         function getAgent2Url() { return document.getElementById('agent2-url').value.trim(); }
         function getAgent3Url() { return document.getElementById('agent3-url').value.trim(); }
+        function getAgent4Url() { return document.getElementById('agent4-url').value.trim(); }
 
         function copyDevUiConfig() {
             var cfg = {
                 a1: getAgent1Url(),
                 a2: getAgent2Url(),
                 a3: getAgent3Url(),
+                a4: getAgent4Url(),
                 tk: document.getElementById('a2a-token').value.trim()
             };
             var encoded = btoa(JSON.stringify(cfg));
@@ -535,7 +563,7 @@
         });
 
         async function checkHealth() {
-            for (var _i = 0, _a = [[getAgent1Url(), 'a1-status', 's1', 'a1-otel'], [getAgent2Url(), 'a2-status', 's2', 'a2-otel'], [getAgent3Url(), 'a3-status', 's3', 'a3-otel']]; _i < _a.length; _i++) {
+            for (var _i = 0, _a = [[getAgent1Url(), 'a1-status', 's1', 'a1-otel'], [getAgent2Url(), 'a2-status', 's2', 'a2-otel'], [getAgent3Url(), 'a3-status', 's3', 'a3-otel'], [getAgent4Url(), 'a4-status', 's4', 'a4-otel']]; _i < _a.length; _i++) {
                 var _b = _a[_i], url = _b[0], id = _b[1], statusId = _b[2], otelId = _b[3];
                 try {
                     var r = await fetch(url + '/health');
@@ -721,6 +749,34 @@
                 }
                 s2.querySelector('.step-content').appendChild(contentDiv);
 
+                // Step 4: Evaluate content with Agent 4 (fire alongside Agent 3)
+                var s4 = addStep('Agent 4: Evaluating content quality...', 'active');
+                var agent4Promise = (async function() {
+                    try {
+                        var a4url = getAgent4Url();
+                        if (!a4url) throw new Error('Evaluator URL not configured');
+                        var pkg2 = content?.content_package;
+                        var evalPayload = {
+                            topic: _pipelineTopic,
+                            blogMarkdown: pkg2?.blog_post?.markdown || '',
+                            wordCount: pkg2?.blog_post?.word_count || 0,
+                            sourcesUsed: _researchBrief?.sources_with_content || _researchBrief?.total_sources || 0,
+                            linkedIn: pkg2?.social?.linkedin?.text || '',
+                            tweets: pkg2?.social?.twitter_thread || [],
+                            generatedAt: new Date().toISOString()
+                        };
+                        var r4 = await fetch(a4url + '/content-created', {
+                            method: 'POST',
+                            headers: Object.assign({}, getAuthHeaders(), { 'Content-Type': 'application/json' }),
+                            body: JSON.stringify(evalPayload)
+                        });
+                        if (!r4.ok) throw new Error('HTTP ' + r4.status);
+                        return await r4.json();
+                    } catch(err) {
+                        return { _error: err.message };
+                    }
+                })();
+
                 // Wait for Agent 3 (may take longer due to TTS)
                 var podcastResult = await agent3Promise;
                 if (podcastResult?.podcast) {
@@ -735,11 +791,72 @@
                     updateStep(s3, 'Agent 3: Podcast unavailable', 'active');
                 }
 
+                // Show evaluation results
+                var evalResult = await agent4Promise;
+                if (evalResult?._error) {
+                    updateStep(s4, 'Agent 4: Evaluation error — ' + evalResult._error, 'active');
+                } else if (evalResult?.overallScore !== undefined || evalResult?.overall_score !== undefined) {
+                    var overall = evalResult.overallScore ?? evalResult.overall_score;
+                    updateStep(s4, 'Agent 4: Evaluation complete — Overall score: ' + overall.toFixed(1) + '/10', 'done');
+                    var evalDiv = document.createElement('div');
+                    evalDiv.className = 'output';
+                    evalDiv.innerHTML = formatEvaluation(evalResult);
+                    s4.querySelector('.step-content').appendChild(evalDiv);
+                } else {
+                    updateStep(s4, 'Agent 4: Evaluation complete', 'done');
+                }
+
             } catch (err) {
                 addStep('Error: ' + err.message, 'active');
             }
 
             document.getElementById('run').disabled = false;
+        }
+
+        function formatEvaluation(ev) {
+            var blog = (ev.blogQualityScore ?? ev.blog_quality_score ?? 0).toFixed(1);
+            var social = (ev.socialQualityScore ?? ev.social_quality_score ?? 0).toFixed(1);
+            var relevance = (ev.relevanceScore ?? ev.relevance_score ?? 0).toFixed(1);
+            var overall = (ev.overallScore ?? ev.overall_score ?? 0).toFixed(1);
+            var blogFeedback = ev.blogFeedback ?? ev.blog_feedback ?? '';
+            var socialFeedback = ev.socialFeedback ?? ev.social_feedback ?? '';
+            var recs = ev.recommendations ?? ev.Recommendations ?? [];
+            var mode = ev.executionMode ?? '';
+            var foundryRunId = ev.foundryReport?.evaluationRunId ?? ev.FoundryReport?.EvaluationRunId ?? '';
+
+            function scoreBar(val) {
+                var pct = Math.round((parseFloat(val) / 10) * 100);
+                var color = pct >= 70 ? 'var(--success)' : pct >= 40 ? 'var(--warning)' : 'var(--error)';
+                return '<div style="display:flex;align-items:center;gap:8px">' +
+                    '<div style="flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden">' +
+                    '<div style="width:' + pct + '%;height:100%;background:' + color + ';border-radius:4px"></div></div>' +
+                    '<span style="min-width:32px;font-size:13px;font-weight:600;color:var(--text-1)">' + val + '</span>' +
+                    '</div>';
+            }
+
+            var html = '<div id="section-evals" style="margin-bottom:4px">';
+            html += '<h3 style="color:var(--accent);margin-bottom:12px">&#9989; Evaluation Report</h3>';
+            html += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px">';
+            html += '<div style="background:var(--bg-surface);border-radius:8px;padding:12px">';
+            html += '<div style="font-size:12px;color:var(--text-2);margin-bottom:6px">Blog Quality</div>' + scoreBar(blog) + '</div>';
+            html += '<div style="background:var(--bg-surface);border-radius:8px;padding:12px">';
+            html += '<div style="font-size:12px;color:var(--text-2);margin-bottom:6px">Social Quality</div>' + scoreBar(social) + '</div>';
+            html += '<div style="background:var(--bg-surface);border-radius:8px;padding:12px">';
+            html += '<div style="font-size:12px;color:var(--text-2);margin-bottom:6px">Relevance</div>' + scoreBar(relevance) + '</div>';
+            html += '<div style="background:var(--bg-surface);border-radius:8px;padding:12px;border:1px solid var(--accent)">';
+            html += '<div style="font-size:12px;color:var(--accent);margin-bottom:6px;font-weight:600">Overall</div>' + scoreBar(overall) + '</div>';
+            html += '</div>';
+            if (blogFeedback) html += '<p style="font-size:13px;color:var(--text-2);margin-bottom:8px"><strong style="color:var(--text-1)">Blog:</strong> ' + escHtml(blogFeedback) + '</p>';
+            if (socialFeedback) html += '<p style="font-size:13px;color:var(--text-2);margin-bottom:8px"><strong style="color:var(--text-1)">Social:</strong> ' + escHtml(socialFeedback) + '</p>';
+            if (recs.length) {
+                html += '<div style="margin-top:8px"><strong style="font-size:13px;color:var(--text-1)">Recommendations</strong><ul style="margin:6px 0 0 18px">';
+                recs.forEach(function(r){ html += '<li style="font-size:13px;color:var(--text-2);margin:3px 0">' + escHtml(r) + '</li>'; });
+                html += '</ul></div>';
+            }
+            if (foundryRunId) html += '<p style="font-size:12px;color:var(--text-3);margin-top:10px">&#9729; Foundry run: ' + escHtml(foundryRunId) + '</p>';
+            if (mode) html += '<p style="font-size:12px;color:var(--text-3);margin-top:4px">Mode: ' + escHtml(mode) + '</p>';
+            html += '</div>';
+            return html;
         }
 
         function formatBrief(brief) {
