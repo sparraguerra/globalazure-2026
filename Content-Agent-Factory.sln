@@ -42,6 +42,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "agent-evaluator", "agent-ev
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgentEvaluator", "Lab\src\agent-evaluator\AgentEvaluator\AgentEvaluator.csproj", "{D1B57879-2926-51C5-EA8F-1555EB31847B}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "dapr", "dapr", "{62F22265-3E2F-405B-80D8-C02F1EC9D247}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "components", "components", "{CD7BC462-2E3C-4B42-8478-DE2E3CF92C3D}"
+	ProjectSection(SolutionItems) = preProject
+		Lab\dapr\components\pubsub.yaml = Lab\dapr\components\pubsub.yaml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -174,6 +181,8 @@ Global
 		{7ADEAFE4-AC2A-44D8-B35E-E1B88243C529} = {8D559BF3-EE76-C704-98DF-8E566645B355}
 		{5135458C-9659-4E70-9DB4-708635A44CB4} = {4CB9FF00-BAD1-0D37-BD78-DDE13AF1C690}
 		{D1B57879-2926-51C5-EA8F-1555EB31847B} = {5135458C-9659-4E70-9DB4-708635A44CB4}
+		{62F22265-3E2F-405B-80D8-C02F1EC9D247} = {88AB7371-40A3-7B65-CF7E-ACD3CC9F1E10}
+		{CD7BC462-2E3C-4B42-8478-DE2E3CF92C3D} = {62F22265-3E2F-405B-80D8-C02F1EC9D247}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B7602FD9-675F-42AF-B5EB-CCA88F38E946}
