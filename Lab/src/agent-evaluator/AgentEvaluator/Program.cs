@@ -11,6 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton<EvaluatorAgent>();
 builder.Services.AddSingleton<ContentEvaluationService>();
 builder.Services.AddSingleton<FoundryEvaluationService>();
+builder.Services.AddHttpClient<FoundryHostedEvaluatorService>();
 
 builder.AddServiceDefaults();
 
@@ -55,32 +56,49 @@ app.MapPost("/content-created", async (
     ContentCreatedMessage message,
     ContentEvaluationService evaluationService,
     FoundryEvaluationService foundryService,
+    FoundryHostedEvaluatorService foundryHostedEvaluatorService,
     ILogger<Program> logger,
     CancellationToken cancellationToken) =>
 {
     logger.LogInformation("[Evaluator] Received content-created event for topic '{Topic}'", message.Topic);
     try
     {
-        // 1. LLM-as-judge evaluation (local, fast).
-        var localResult = await evaluationService.EvaluateAsync(message, cancellationToken);
+        var executionMode = (Environment.GetEnvironmentVariable("EVALUATOR_EXECUTION_MODE") ?? "local")
+            .Trim()
+            .ToLowerInvariant();
 
-        // 2. Foundry cloud evaluation (async, results appear in Foundry portal).
-        FoundryEvaluationReport? foundryReport = null;
-        if (foundryService.IsAvailable)
+        var useFoundryHostedAgent = executionMode is "foundry-agent" or "foundry" or "remote";
+        EvaluationResult result;
+
+        if (useFoundryHostedAgent)
         {
-            foundryReport = await foundryService.SubmitAsync(message, cancellationToken);
-            if (foundryReport is not null)
+            logger.LogInformation("[Evaluator] Execution mode: foundry-agent");
+            result = await foundryHostedEvaluatorService.EvaluateAsync(message, cancellationToken);
+        }
+        else
+        {
+            // 1. LLM-as-judge evaluation (local, fast).
+            var localResult = await evaluationService.EvaluateAsync(message, cancellationToken);
+
+            // 2. Foundry cloud evaluation (async, results appear in Foundry portal).
+            FoundryEvaluationReport? foundryReport = null;
+            if (foundryService.IsAvailable)
             {
-                logger.LogInformation(
-                    "[Foundry] Evaluation run submitted — eval: {EvalId}, run: {RunId}",
-                    foundryReport.EvaluationId, foundryReport.EvaluationRunId);
+                foundryReport = await foundryService.SubmitAsync(message, cancellationToken);
+                if (foundryReport is not null)
+                {
+                    logger.LogInformation(
+                        "[Foundry] Evaluation run submitted — eval: {EvalId}, run: {RunId}",
+                        foundryReport.EvaluationId, foundryReport.EvaluationRunId);
+                }
             }
+
+            result = localResult with { FoundryReport = foundryReport };
         }
 
-        var result = localResult with { FoundryReport = foundryReport };
         logger.LogInformation(
             "[Evaluator] Complete — overall: {Overall:F1}, foundry run: {RunId}",
-            result.OverallScore, foundryReport?.EvaluationRunId ?? "n/a");
+            result.OverallScore, result.FoundryReport?.EvaluationRunId ?? "n/a");
 
         return Results.Ok(result);
     }
@@ -98,7 +116,8 @@ app.MapSubscribeHandler();
 app.MapGet("/health", () => Results.Json(new
 {
     status = "healthy",
-    agent = Environment.GetEnvironmentVariable("OTEL_SERVICE_NAME") ?? "evaluator-agent"
+    agent = Environment.GetEnvironmentVariable("OTEL_SERVICE_NAME") ?? "evaluator-agent",
+    executionMode = (Environment.GetEnvironmentVariable("EVALUATOR_EXECUTION_MODE") ?? "local").ToLowerInvariant()
 }));
 
 app.Run();

@@ -2,6 +2,7 @@ using System.ClientModel;
 using AgentEvaluator.Models;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Logging;
 
 namespace AgentEvaluator;
 
@@ -105,7 +106,7 @@ public class ContentEvaluationService
             """;
     }
 
-    private static EvaluationResult ParseEvaluationResponse(string text, string topic)
+    internal static EvaluationResult ParseEvaluationResponse(string text, string topic)
     {
         var blogScore = ParseScore(text, "BLOG_SCORE:");
         var socialScore = ParseScore(text, "SOCIAL_SCORE:");
@@ -154,7 +155,7 @@ public class ContentEvaluationService
         return (end >= 0 ? rest[..end] : rest).Trim();
     }
 
-    private static EvaluationResult BuildFallbackResult(string topic) =>
+    internal static EvaluationResult BuildFallbackResult(string topic) =>
         new()
         {
             Topic = topic,

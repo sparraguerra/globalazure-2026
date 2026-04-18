@@ -169,6 +169,22 @@ Exposes a standard A2A Agent Card at `/.well-known/agent.json` and `/.well-known
 | Output | `application/json` |
 | Auth | Bearer (when `A2A_AUTH_ENABLED=true`) |
 
+## Runtime Switch (Local vs Foundry Agent)
+
+The evaluator supports a runtime toggle to switch execution backend without changing code:
+
+| Env Var | Values | Effect |
+|---------|--------|--------|
+| `EVALUATOR_EXECUTION_MODE` | `local` (default) | Uses `ContentEvaluationService` + optional `FoundryEvaluationService` run submission |
+| `EVALUATOR_EXECUTION_MODE` | `foundry-agent` | Calls a published Foundry agent through `FOUNDRY_EVALUATOR_RESPONSES_ENDPOINT` |
+
+When running in `foundry-agent` mode, configure:
+
+- `FOUNDRY_EVALUATOR_RESPONSES_ENDPOINT` (required)
+- one auth option: `FOUNDRY_EVALUATOR_API_KEY` or `FOUNDRY_EVALUATOR_BEARER_TOKEN`
+- optional: `FOUNDRY_EVALUATOR_MODEL`
+- optional credential scope: `FOUNDRY_EVALUATOR_SCOPE` (default `https://ai.azure.com/.default`)
+
 ## Observability
 
 All evaluation spans are emitted under the `evaluator-agent` source and forwarded via OTLP to the Managed OTEL Collector → Application Insights:
